@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Note Viewer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #noteContent {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            min-height: 200px;
+        }
+
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .format-buttons {
+            margin-top: 10px;
+        }
+
+        .format-buttons button {
+            background-color: #6c757d;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .format-buttons button:hover {
+            background-color: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Markdown Note Viewer</h1>
+
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ol>
+                <li>Login to your app and get the JWT token</li>
+                <li>Paste the token below</li>
+                <li>Enter the Note ID you want to view</li>
+                <li>Click a format button to see the rendered content</li>
+            </ol>
+        </div>
+
+        <div class="input-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+        </div>
+
+        <div class="input-group">
+            <label for="token">JWT Token:</label>
+            <input type="text" id="token" placeholder="Paste your JWT token here (from /auth/login response)">
+        </div>
+
+        <div class="input-group">
+            <label for="noteId">Note ID:</label>
+            <input type="text" id="noteId" placeholder="Enter the note ID (UUID)">
+        </div>
+
+        <div class="format-buttons">
+            <span style="color: #666; margin-right: 10px;">View as:</span>
+            <button onclick="loadNote('html')"> HTML</button>
+            <button onclick="loadNote('json')"> JSON</button>
+            <button onclick="loadNoteRaw()"> Raw HTML</button>
+            <button onclick="clearContent()"> Clear</button>
+        </div>
+
+        <div id="error" class="error"></div>
+        <div id="success" class="success"></div>
+
+        <div id="noteContent"></div>
+    </div>
+
+    <script>
+        // Load saved values from localStorage
+        window.onload = function() {
+            const savedToken = localStorage.getItem('jwt_token');
+            const savedNoteId = localStorage.getItem('note_id');
+            const savedApiUrl = localStorage.getItem('api_url');
+
+            if (savedToken) document.getElementById('token').value = savedToken;
+            if (savedNoteId) document.getElementById('noteId').value = savedNoteId;
+            if (savedApiUrl) document.getElementById('apiUrl').value = savedApiUrl;
+        };
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        async function loadNote(format = 'html') {
+            hideMessages();
+
+            const token = document.getElementById('token').value.trim();
+            const noteId = document.getElementById('noteId').value.trim();
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+
+            // Validation
+            if (!token) {
+                showError(' Please enter your JWT token');
+                return;
+            }
+
+            if (!noteId) {
+                showError(' Please enter a note ID');
+                return;
+            }
+
+            // Save values to localStorage
+            localStorage.setItem('jwt_token', token);
+            localStorage.setItem('note_id', noteId);
+            localStorage.setItem('api_url', apiUrl);
+
+            // Prepare request
+            const url = `${apiUrl}/notes/${noteId}/render`;
+
+            // IMPORTANT: Set the correct Accept header based on format
+            const headers = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            // Add Accept header based on format
+            if (format === 'json') {
+                headers['Accept'] = 'application/json';  // This is crucial for JSON!
+            } else {
+                headers['Accept'] = 'text/html';
+            }
+
+            try {
+                showSuccess(' Loading note...');
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showError(' Authentication failed. Please check your JWT token.');
+                    } else if (response.status === 404) {
+                        showError(' Note not found. Please check the note ID.');
+                    } else {
+                        showError(` Error: ${response.status} ${response.statusText}`);
+                    }
+                    return;
+                }
+
+                if (format === 'json') {
+                    const data = await response.json();
+                    document.getElementById('noteContent').innerHTML =
+                        '<h2>JSON Response:</h2><pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto;">' +
+                        JSON.stringify(data, null, 2) +
+                        '</pre>';
+                    showSuccess(' Note loaded successfully (JSON format)');
+                } else {
+                    const html = await response.text();
+                    document.getElementById('noteContent').innerHTML = html;
+                    showSuccess(' Note loaded successfully (HTML format)');
+                }
+
+            } catch (error) {
+                showError(` Network error: ${error.message}. Make sure your API server is running.`);
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadNoteRaw() {
+            hideMessages();
+
+            const token = document.getElementById('token').value.trim();
+            const noteId = document.getElementById('noteId').value.trim();
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+
+            if (!token || !noteId) {
+                showError(' Please enter both JWT token and note ID');
+                return;
+            }
+
+            const url = `${apiUrl}/notes/${noteId}/render/raw`;
+
+            try {
+                showSuccess(' Loading raw HTML...');
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showError(' Endpoint not found. Make sure you added the /render/raw endpoint to your API.');
+                    } else {
+                        showError(` Error: ${response.status} ${response.statusText}`);
+                    }
+                    return;
+                }
+
+                const html = await response.text();
+                document.getElementById('noteContent').innerHTML =
+                    '<h2>Raw HTML (without wrapper):</h2>' +
+                    '<div style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px;"><pre>' +
+                    html.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                    '</pre></div>' +
+                    '<h2>Rendered Preview:</h2>' +
+                    '<div style="border: 2px solid #ddd; padding: 15px; border-radius: 4px;">' +
+                    html +
+                    '</div>';
+
+                showSuccess(' Raw HTML loaded successfully');
+
+            } catch (error) {
+                showError(` Network error: ${error.message}`);
+            }
+        }
+
+        function clearContent() {
+            document.getElementById('noteContent').innerHTML = '';
+            hideMessages();
+        }
+    </script>
+</body>
+</html>
