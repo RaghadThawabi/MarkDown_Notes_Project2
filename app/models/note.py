@@ -14,4 +14,15 @@ class Note(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     is_deleted = Column(Boolean, default=False)
 
+    revisions = relationship(
+        "NoteRevision",
+        back_populates="note",
+        cascade="all, delete"
+    )#as I said in revisions table , to be able to have the notes versions and vise versa
+
+    tags = relationship(
+        "Tag",
+        secondary="note_tags",
+        back_populates="notes"
+    )
     owner = relationship("User")

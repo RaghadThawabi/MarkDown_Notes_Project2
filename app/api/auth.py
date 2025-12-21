@@ -5,14 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.user import User
 from app.core.security import hash_password, verify_password
-from app.schemas.user import UserCreate, Token,UserLogin,UserSignUp
+from app.schemas.user import Token, UserLogin, UserCreate
 from app.core.jwt import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", status_code=201)
 async def register(
-    user: UserSignUp,
+    user: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
