@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from app.api import auth
+from app.api import auth,notes
 
-app = FastAPI()
+app = FastAPI(title="Mark Down Notes API", description="Mark Down Notes API")
 app.include_router(auth.router)
-if __name__ == '__main__':
-    print("vfd")
+app.include_router(notes.router)
