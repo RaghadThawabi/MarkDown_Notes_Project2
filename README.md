@@ -960,8 +960,7 @@ Solution: Self-host LanguageTool or implement request throttling
 ### Getting Help
 
 - **Documentation**: http://localhost:8000/docs
-- **Issues**: https://github.com/RaghadThawabi/MarkDown_Notes_Project2/issues
-- **Discussions**: https://github.com/RaghadThawabi/MarkDown_Notes_Project2/discussions
+
 
 ---
 
@@ -981,9 +980,8 @@ Solution: Self-host LanguageTool or implement request throttling
 - ✅ Revision History (3.1)
 - ✅ Grammar Checking (3.2)
 - ✅ Rendered Content Delivery (3.3)
-- 🚧 AI Summarization (Optional)
-- 🚧 Cloud Storage Integration (Optional)
+
 
 ---
 
-**Made with ❤️ using FastAPI and PostgreSQL**
+**Made with using FastAPI and PostgreSQL**
