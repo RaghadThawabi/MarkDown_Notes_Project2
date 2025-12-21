@@ -94,7 +94,7 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/markdown-notes-api.git
+git clone https://github.com/RaghadThawabi/MarkDown_Notes_Project2
 cd markdown-notes-api
 ```
 
