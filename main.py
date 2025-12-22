@@ -3,10 +3,11 @@ from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from app.api import auth, notes, grammar_routes, render
 from app.core.config import settings
-from app.models.user import Base
+from app.models import Base  # Import your Base - adjust this import path if needed
 
 app = FastAPI(title="Mark Down Notes API", description="Mark Down Notes API")
 
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,10 +16,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Startup event to create database tables
 @app.on_event("startup")
 async def startup():
     """Create database tables on startup"""
     try:
+        # DEBUG: Print the DATABASE_URL (hide password)
+        db_url = settings.DATABASE_URL
+        if db_url:
+            # Hide password for security
+            import re
+            safe_url = re.sub(r'://([^:]+):([^@]+)@', r'://\1:****@', db_url)
+            print(f"🔍 DATABASE_URL being used: {safe_url}")
+        else:
+            print("❌ DATABASE_URL is None or empty!")
+            raise ValueError("DATABASE_URL environment variable is not set")
+        
         engine = create_async_engine(settings.DATABASE_URL, echo=True)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -26,8 +39,10 @@ async def startup():
         print("✅ Database tables created successfully!")
     except Exception as e:
         print(f"❌ Error creating database tables: {e}")
+        print(f"❌ Error type: {type(e).__name__}")
         raise
 
+# Include routers
 app.include_router(auth.router)
 app.include_router(notes.router)
 app.include_router(grammar_routes.router)
