@@ -3,7 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine
 from app.api import auth, notes, grammar_routes, render
 from app.core.config import settings
-from app.models import Base  # Import your Base - adjust this import path if needed
+from app.models.user import Base
 
 app = FastAPI(title="Mark Down Notes API", description="Mark Down Notes API")
 
